@@ -10,3 +10,4 @@ class IncomeStatement(models.Model):
 
     def __str__(self):
         return f"Income Statement {self.ISID}"
+    #bishal added
