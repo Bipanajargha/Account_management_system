@@ -1,9 +1,9 @@
 from django.contrib import admin
 
-# Register your models here.
 from .models import BalanceSheet
+
 
 @admin.register(BalanceSheet)
 class BalanceSheetAdmin(admin.ModelAdmin):
-    list_display = ['BSID', 'ReportID', 'TotalLiabilities', 'TotalAssets', 'TotalOwnersEquity']
-    search_fields = ['BSID']
+    list_display = ["report", "total_assets", "total_liabilities", "total_equity"]
+    search_fields = ["report__id"]

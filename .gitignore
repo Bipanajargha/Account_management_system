@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Django local database
+db.sqlite3
+
+# Environment folders
+venv/
+env/
+
+# Logs
+*.log
+
+# Editor-specific
+*.idea/
+*.vscode/

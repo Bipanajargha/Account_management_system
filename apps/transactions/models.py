@@ -1,55 +1,101 @@
+from django.conf import settings
 from django.db import models
-from apps.users.models import AmsUser
+from django.utils import timezone
+
+from apps.accounts.models import LedgerAccount
+
 
 class Transaction(models.Model):
-    TransactionID = models.AutoField(primary_key=True)
-    AccountID = models.ForeignKey(AmsUser, on_delete=models.CASCADE, related_name='transactions')
-    DateOfTransaction = models.DateTimeField(auto_now_add=True)
-    Description = models.TextField(blank=True)
-    BankName = models.CharField(max_length=100)
-    Debit = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
-    Credit = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
-    TotalAmount = models.DecimalField(max_digits=15, decimal_places=2)
+    TYPE_INCOMING = "incoming"
+    TYPE_OUTGOING = "outgoing"
+    TYPE_CHOICES = [
+        (TYPE_INCOMING, "Incoming"),
+        (TYPE_OUTGOING, "Outgoing"),
+    ]
 
-    def __str__(self):
-        return f"Transaction {self.TransactionID}"
+    METHOD_CASH = "cash"
+    METHOD_BANK = "bank"
+    METHOD_ONLINE = "online"
+    METHOD_CHOICES = [
+        (METHOD_CASH, "Cash"),
+        (METHOD_BANK, "Bank"),
+        (METHOD_ONLINE, "Online"),
+    ]
 
-class Payment(models.Model):
-    PaymentID = models.AutoField(primary_key=True)
-    TransactionID = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='payments')
-    Currency = models.CharField(max_length=10, default='USD')
-    Amount = models.DecimalField(max_digits=15, decimal_places=2)
+    STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
+    STATUS_REJECTED = "rejected"
 
-    def __str__(self):
-        return f"Payment {self.PaymentID}"
+    id = models.BigAutoField(primary_key=True)
+    ledger = models.ForeignKey(LedgerAccount, on_delete=models.CASCADE, related_name="transactions")
+    transaction_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    payment_method = models.CharField(max_length=20, choices=METHOD_CHOICES)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    currency = models.CharField(max_length=10, default="USD")
+    description = models.TextField(blank=True)
+    reference = models.CharField(max_length=64, blank=True)
+    transaction_date = models.DateField(default=timezone.now)
+    status = models.CharField(max_length=20, default=STATUS_PENDING)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="transactions",
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approved_transactions",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-transaction_date", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.transaction_type} {self.amount} ({self.payment_method})"
+
+    def mark_approved(self, user):
+        self.status = self.STATUS_APPROVED
+        self.approved_by = user
+        self.approved_at = timezone.now()
+        self.save(update_fields=["status", "approved_by", "approved_at"])
 
 
-class CreditCard(models.Model):
-    CreditCardNo = models.CharField(max_length=20, primary_key=True)
-    PaymentID = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='credit_card')
-    BankCredit = models.CharField(max_length=100)
-    NameCredit = models.CharField(max_length=100)
+class Voucher(models.Model):
+    TYPE_PAYMENT = "payment"
+    TYPE_RECEIPT = "receipt"
+    TYPE_JOURNAL = "journal"
 
-    def __str__(self):
-        return f"Card {self.CreditCardNo}"
+    id = models.BigAutoField(primary_key=True)
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name="voucher")
+    voucher_type = models.CharField(
+        max_length=20,
+        choices=[
+            (TYPE_PAYMENT, "Payment"),
+            (TYPE_RECEIPT, "Receipt"),
+            (TYPE_JOURNAL, "Journal"),
+        ],
+    )
+    issued_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.voucher_type} voucher for transaction {self.transaction_id}"
 
 
-class Cash(models.Model):
-    CashTransactionNo = models.CharField(max_length=50, primary_key=True)
-    PaymentID = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='cash')
-    NameCash = models.CharField(max_length=100)
-    CashTendered = models.DecimalField(max_digits=15, decimal_places=2)
+class Receipt(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="receipts")
+    issued_to = models.CharField(max_length=120)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    issued_at = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=20, choices=Transaction.METHOD_CHOICES)
+    details = models.TextField(blank=True)
 
-    def __str__(self):
-        return f"Cash {self.CashTransactionNo}"
+    def __str__(self) -> str:
+        return f"Receipt {self.id}"
 
 
-# class Cheque(models.Model):
-#     ChequeID = models.CharField(max_length=50, primary_key=True)
-#     PaymentID = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='cheque')
-#     ChequeNo = models.CharField(max_length=50)
-#     BankCheque = models.CharField(max_length=100)
-#     NameCheque = models.CharField(max_length=100)
-
-#     def __str__(self):
-#         return f"Cheque {self.ChequeNo}"

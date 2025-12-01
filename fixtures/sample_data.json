@@ -1,0 +1,37 @@
+[
+  {
+    "model": "accounts.accountcategory",
+    "pk": 1,
+    "fields": {
+      "name": "Demo Assets",
+      "code": "DEMO-ASSET",
+      "type": "asset",
+      "description": "Preset asset category for demos",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.accountcategory",
+    "pk": 2,
+    "fields": {
+      "name": "Demo Income",
+      "code": "DEMO-INCOME",
+      "type": "income",
+      "description": "Preset income category for demos",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.ledgeraccount",
+    "pk": 1,
+    "fields": {
+      "name": "Demo Cash Ledger",
+      "code": "LEDGER-001",
+      "category": 1,
+      "owner": null,
+      "description": "Example ledger for sample transactions",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]

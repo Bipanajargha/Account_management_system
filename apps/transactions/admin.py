@@ -1,25 +1,31 @@
 from django.contrib import admin
-from .models import Transaction, Payment, CreditCard, Cash
+
+from .models import Receipt, Transaction, Voucher
+
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ['TransactionID', 'AccountID', 'DateOfTransaction', 'BankName', 'Debit', 'Credit', 'TotalAmount']
-    list_filter = ['DateOfTransaction', 'BankName']
-    search_fields = ['TransactionID', 'Description']
-    date_hierarchy = 'DateOfTransaction'
+    list_display = (
+        "id",
+        "ledger",
+        "transaction_type",
+        "payment_method",
+        "amount",
+        "status",
+        "transaction_date",
+    )
+    list_filter = ("transaction_type", "payment_method", "status")
+    search_fields = ("reference", "description")
+    date_hierarchy = "transaction_date"
 
-@admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
-    list_display = ['PaymentID', 'TransactionID', 'Currency', 'Amount']
-    list_filter = ['Currency']
-    search_fields = ['PaymentID']
 
-@admin.register(CreditCard)
-class CreditCardAdmin(admin.ModelAdmin):
-    list_display = ['CreditCardNo', 'PaymentID', 'BankCredit', 'NameCredit']
-    search_fields = ['CreditCardNo', 'NameCredit']
+@admin.register(Voucher)
+class VoucherAdmin(admin.ModelAdmin):
+    list_display = ("id", "transaction", "voucher_type", "issued_at")
+    list_filter = ("voucher_type",)
 
-@admin.register(Cash)
-class CashAdmin(admin.ModelAdmin):
-    list_display = ['CashTransactionNo', 'PaymentID', 'NameCash', 'CashTendered']
-    search_fields = ['CashTransactionNo', 'NameCash']
+
+@admin.register(Receipt)
+class ReceiptAdmin(admin.ModelAdmin):
+    list_display = ("id", "transaction", "issued_to", "amount", "payment_method")
+    search_fields = ("issued_to",)
