@@ -57,6 +57,6 @@ urlpatterns = [
     path("api/", include(router.urls)),
     
     # Docs
-    path("api/docs/", schema_view.with_ui("swagger", cache_timeout=0), name="api_docs"),
+    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger"),
     path("api/redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="api_redoc"),
 ]
