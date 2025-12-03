@@ -6,6 +6,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.core.mail import send_mail
+from django.conf import settings
+
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 # Assumed internal imports
 from ams.permissions import (
@@ -208,11 +213,53 @@ class UserViewSet(viewsets.ModelViewSet):
 class RegistrationView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
+    @swagger_auto_schema(
+        operation_description="Register a new user.",
+        request_body=UserCreateSerializer,
+        responses={
+            201: openapi.Response(
+                description="User registered successfully",
+                schema=UserCreateSerializer
+            ),
+            400: "Invalid input data"
+        }
+    )
 
     def post(self, request):
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # user = serializer.save()
+        # try:
+        #     log_audit(
+        #         user=user,
+        #         action="create",
+        #         entity_type="user_registration",
+        #         entity_id=str(user.pk),
+        #         metadata={"username": user.username},
+        #     )
+        # except Exception as e:
+        #     print(f"Audit Error (RegistrationView): {e}")
+        # return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+         # Save user
         user = serializer.save()
+
+        # ---- SEND EMAIL ----
+        try:
+            send_mail(
+                subject='Registration Successful',
+                message=(
+                    f'Hello {user.username},\n\n'
+                    f'Thank you for registering!\n\n'
+                    f'Your details have been saved successfully.'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print(f"Email failed: {e}")  # Log but do NOT fail the request
+
+        # ---- AUDIT LOG ----
         try:
             log_audit(
                 user=user,
@@ -223,4 +270,6 @@ class RegistrationView(APIView):
             )
         except Exception as e:
             print(f"Audit Error (RegistrationView): {e}")
+
+        # ---- RESPONSE ----
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
